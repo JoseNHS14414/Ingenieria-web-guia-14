@@ -1,0 +1,10 @@
+@"
+*.zip
+*.rar
+**/node_modules/
+**/vendor/
+**/dist/
+**/android/.gradle/
+**/android/build/
+**/android/app/build/
+"@ | Set-Content .gitignore
