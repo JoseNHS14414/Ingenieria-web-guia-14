@@ -12,20 +12,46 @@ async function entrar() {
     body: JSON.stringify({ email: email.value, password: password.value })
   })
   const json = await res.json()
-  localStorage.setItem('token', json.token)
-  cargar()
+  if (json.token) {
+    sessionStorage.setItem('token', json.token)
+    await cargar()
+  }
 }
 
 async function cargar() {
-  const res = await fetch(`${API}/pedidos`, { headers: {
-    Accept: 'application/json',
-    Authorization: `Bearer ${localStorage.getItem('token')}` } })
-  pedidos.value = await res.json()
+  const token = sessionStorage.getItem('token')
+  if (!token) return
+  const res = await fetch(`${API}/pedidos`, {
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`
+    }
+  })
+  if (res.ok) {
+    pedidos.value = await res.json()
+  }
 }
 
-function salir() {
-  localStorage.removeItem('token')
+async function salir() {
+  const token = sessionStorage.getItem('token')
+  if (token) {
+    try {
+      await fetch(`${API}/logout`, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      })
+    } catch (e) {
+      console.error('Error al revocar token:', e)
+    }
+  }
+  sessionStorage.removeItem('token')
   pedidos.value = []
+  if ('caches' in window) {
+    await caches.delete('api-cache')
+  }
 }
 </script>
 
@@ -34,7 +60,7 @@ function salir() {
     <input v-model="email" /> <input v-model="password" type="password" />
     <button @click="entrar">Entrar</button> <button @click="salir">Salir</button>
     <ul>
-      <li v-for="p in pedidos" :key="p.id" v-html="p.descripcion"></li>
+      <li v-for="p in pedidos" :key="p.id">{{ p.descripcion }}</li>
     </ul>
   </section>
 </template>
